@@ -1,7 +1,8 @@
 from importlib import import_module
+import asyncio
 
 
-def device_selector(
+async def device_selector(
     name: str,
     device_id: int,
     device_type: int,
@@ -20,7 +21,7 @@ def device_selector(
             device_path = f".{'x%02x' % device_type}.device"
         else:
             device_path = f".{'%02x' % device_type}.device"
-        module = import_module(device_path, __package__)
+        module = await asyncio.to_thread(import_module, device_path, __package__)
         device = module.MideaAppliance(
             name=name,
             device_id=device_id,

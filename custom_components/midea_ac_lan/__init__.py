@@ -33,11 +33,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def update_listener(hass, config_entry):
-    for platform in ALL_PLATFORM:
-        await hass.config_entries.async_forward_entry_unload(config_entry, platform)
-    for platform in ALL_PLATFORM:
-        hass.async_create_task(hass.config_entries.async_forward_entry_setup(
-            config_entry, platform))
+    await hass.config_entries.async_unload_platforms(config_entry, ALL_PLATFORM)
+    await hass.config_entries.async_forward_entry_setups(config_entry, ALL_PLATFORM)
     device_id = config_entry.data.get(CONF_DEVICE_ID)
     customize = config_entry.options.get(
         CONF_CUSTOMIZE, ""
@@ -145,7 +142,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry):
     if protocol == 3 and (key is None or key is None):
         _LOGGER.error("For V3 devices, the key and the token is required.")
         return False
-    device = device_selector(
+    device = await device_selector(
         name=name,
         device_id=device_id,
         device_type=device_type,
@@ -167,9 +164,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry):
         if DEVICES not in hass.data[DOMAIN]:
             hass.data[DOMAIN][DEVICES] = {}
         hass.data[DOMAIN][DEVICES][device_id] = device
-        for platform in ALL_PLATFORM:
-            hass.async_create_task(hass.config_entries.async_forward_entry_setup(
-                config_entry, platform))
+        await hass.config_entries.async_forward_entry_setups(config_entry, ALL_PLATFORM)
         config_entry.add_update_listener(update_listener)
         return True
     return False
@@ -185,6 +180,5 @@ async def async_unload_entry(hass: HomeAssistant, config_entry):
         if dm is not None:
             dm.close()
         hass.data[DOMAIN][DEVICES].pop(device_id)
-    for platform in ALL_PLATFORM:
-        await hass.config_entries.async_forward_entry_unload(config_entry, platform)
+    await hass.config_entries.async_unload_platforms(config_entry, ALL_PLATFORM)
     return True
